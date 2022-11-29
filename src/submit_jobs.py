@@ -12,12 +12,15 @@ import requests
 import argparse
 import time
 import json
+import random
 import sys
 import os
 
 DALTON_HOST = "localhost"
 # RULE_SET_RELATIVE_PATH = "rules"
 ENGINE_CONFIG_RELATIVE_PATH = "engine_configs"
+
+ENGINES_LIST = ["snort2"]
 
 # List of Engines
 ENGINE_MAP = {
@@ -64,7 +67,7 @@ def arguments_init():
     return args
 
 
-def upload_to_dalton(rule, pcaps, engines):
+def upload_to_dalton(rule, pcaps):
     """
         For a single rule there could be multiple PCAPs
 
@@ -77,7 +80,7 @@ def upload_to_dalton(rule, pcaps, engines):
         }
     """
     pcap_list = pcaps.split(",")
-    engine_list = engines.split(",")
+    engine_list = ENGINES_LIST
     response_map = {}
     for each_engine in engine_list:
         # We upload a bunch of test for a specific Engines
@@ -123,20 +126,21 @@ def check_result_in_dalton(jobs):
     for each_engine in jobs:
         for each_pcap in jobs[each_engine]:
             # lets sleep for some more time to allow the server to process all the records.
-            time.sleep(10)
+            time.sleep(random.choice(range(10,20)))
             each_id = jobs[each_engine][each_pcap]["id"]
             alert_text = requests.get(f"http://{DALTON_HOST}/dalton/controller_api/v2/{each_id}/all")
             response_for_id = alert_text.json()
             jobs[each_engine][each_pcap]["alert"] = response_for_id["data"]["alert"]
-            with open(f"outputs/job_alerts/{each_id}.json", "w") as json_fp:
+            jobs[each_engine][each_pcap]["error"] = response_for_id["data"]["error"]
+            with open(f"outputs/dalton_results/all/{each_id}.json", "w") as json_fp:
                 json.dump(response_for_id, json_fp, indent=2)
     return jobs
 
 
-def submit_jobs_to_dalton_main(input_rule, input_pcaps, engines, output):
-    job_ids = upload_to_dalton(input_rule, input_pcaps, engines)
+def submit_jobs_to_dalton_main(input_rule, input_pcaps, output):
+    job_ids = upload_to_dalton(input_rule, input_pcaps)
     # sleep for some time to allow the pcaps to be processed.
-    time.sleep(60)
+    time.sleep(random.choice(range(30,60)))
     output_json = check_result_in_dalton(job_ids)
     """
         OutPut Format
@@ -172,7 +176,7 @@ def main(arguments):
     if not engines:
         engines = 'snort2'
 
-    submit_jobs_to_dalton_main(input_rule, input_pcaps, engines, output_file)
+    submit_jobs_to_dalton_main(input_rule, input_pcaps, output_file)
 
 
 if __name__ == "__main__":
