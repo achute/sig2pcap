@@ -190,30 +190,31 @@ def print_results(result):
     """
 
     for each_rule in result:
-        parent_result =  result[each_rule]["parent"]
-        if parent_result == -1:
-            parent_error += 1
-        elif parent_result == 1:
-            parent_tp += 1
-        elif parent_result == 2:
-            parent_fp += 1
-        elif parent_result == 3:
-            parent_fn += 1
-        else:
-            parent_unknwn += 1
-        child_results = result[each_rule]["child"]
-        for each_child_res in child_results:
-            if each_child_res == -1:
-                child_error += 1
-            elif each_child_res == 1:
-                child_tp += 1
-            elif each_child_res == 2:
-                child_fp += 1
-            elif each_child_res == 3:
-                child_fn += 1
+        for sid in each_rule:
+            parent_result =  each_rule[sid]["parent"]
+            if parent_result == -1:
+                parent_error += 1
+            elif parent_result == 1:
+                parent_tp += 1
+            elif parent_result == 2:
+                parent_fp += 1
+            elif parent_result == 3:
+                parent_fn += 1
             else:
-                child_unknwn += 1
-    
+                parent_unknwn += 1
+            child_results = each_rule[sid]["child"]
+            for each_child_res in child_results:
+                if each_child_res == -1:
+                    child_error += 1
+                elif each_child_res == 1:
+                    child_tp += 1
+                elif each_child_res == 2:
+                    child_fp += 1
+                elif each_child_res == 3:
+                    child_fn += 1
+                else:
+                    child_unknwn += 1
+        
     # END results
     print("\n --Results -- \n")
     print("Parent:\n")
@@ -264,13 +265,13 @@ def process_all_valid_rule():
     # Process each SID in their own threads
     # and return the results
     final_result_each = pool.map(process_single_valid_rule, valid_json)
-
+    print(final_result_each)
     # Close the pool and wait for the work to finish
     pool.close()
     pool.join()
 
-    final_results.update(final_result_each)
-    print_results(final_results)
+    
+    print_results(final_result_each)
 
 
 
