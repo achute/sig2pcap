@@ -13,9 +13,11 @@
     http_manipulate.py --input input_pcap --output output_pcap --evasion <all, method, version_valid, version_invalid, payload_append>
 
 """
+import os
 import sys
 import random
 import argparse
+import hashlib
 
 # SCAPY Imports
 from scapy.all import *
@@ -110,47 +112,56 @@ def confirm_http_packet(packet):
 
 
 def modify_http_method(packet):
-    last_layer_payload = packet.lastlayer().load
-    present_message = bytes(last_layer_payload).split(b' ')
-    present_method = present_message[0]
-    # randomly pick up a method which is not present in message
-    new_method = random_choice(HTTP_METHODS, present_method)
-    present_message[0] = new_method
-    packet.lastlayer().load = b' '.join(present_message)
-    console_log('[HTTP] METHOD Modified to - {} '.format(new_method.decode()))
-    return packet
+    try:
+        last_layer_payload = packet.lastlayer().load
+        present_message = bytes(last_layer_payload).split(b' ')
+        present_method = present_message[0]
+        # randomly pick up a method which is not present in message
+        new_method = random_choice(HTTP_METHODS, present_method)
+        present_message[0] = new_method
+        packet.lastlayer().load = b' '.join(present_message)
+        console_log('[HTTP] METHOD Modified to - {} '.format(new_method.decode()))
+        return packet
+    except:
+        return packet
 
 
 def modify_http_version_valid(packet):
-    last_layer_payload = packet.lastlayer().load
-    present_message = last_layer_payload.split(b'\r\n')  # Line Wise
-    present_http_line = present_message[0].split(b' ')
-    present_http_version = present_http_line[-1].split(b'/')[-1]
-    # randomly pick up a valid HTTP version which is not present in message
-    new_valid_version = random_choice(HTTP_VALID_VERSION_DECIMAl, present_http_version)
+    try:
+        last_layer_payload = packet.lastlayer().load
+        present_message = last_layer_payload.split(b'\r\n')  # Line Wise
+        present_http_line = present_message[0].split(b' ')
+        present_http_version = present_http_line[-1].split(b'/')[-1]
+        # randomly pick up a valid HTTP version which is not present in message
+        new_valid_version = random_choice(HTTP_VALID_VERSION_DECIMAl, present_http_version)
 
-    new_http_version = b'HTTP/' + new_valid_version
-    present_http_line[-1] = new_http_version
-    new_http_line = b' '.join(present_http_line)
-    present_message[0] = new_http_line
-    packet.lastlayer().load = b'\r\n'.join(present_message)
-    console_log('[HTTP] Version Modified to - {} '.format(new_http_version.decode()))
-    return packet
+        new_http_version = b'HTTP/' + new_valid_version
+        present_http_line[-1] = new_http_version
+        new_http_line = b' '.join(present_http_line)
+        present_message[0] = new_http_line
+        packet.lastlayer().load = b'\r\n'.join(present_message)
+        console_log('[HTTP] Version Modified to - {} '.format(new_http_version.decode()))
+        return packet
+    except:
+        return packet
 
 
 def modify_http_version_invalid(packet):
-    last_layer_payload = packet.lastlayer().load
-    present_message = last_layer_payload.split(b'\r\n')  # Line Wise
-    present_http_line = present_message[0].split(b' ')
-    # randomly pick up a valid HTTP version which is not present in message
-    new_invalid_version = random_generation('http_version', HTTP_VALID_VERSION_DECIMAl)
-    new_http_version = b'HTTP/' + new_invalid_version
-    present_http_line[-1] = new_http_version
-    new_http_line = b' '.join(present_http_line)
-    present_message[0] = new_http_line
-    packet.lastlayer().load = b'\r\n'.join(present_message)
-    console_log('[HTTP] Invalid Version Modified to - {} '.format(new_http_version.decode()))
-    return packet
+    try:
+        last_layer_payload = packet.lastlayer().load
+        present_message = last_layer_payload.split(b'\r\n')  # Line Wise
+        present_http_line = present_message[0].split(b' ')
+        # randomly pick up a valid HTTP version which is not present in message
+        new_invalid_version = random_generation('http_version', HTTP_VALID_VERSION_DECIMAl)
+        new_http_version = b'HTTP/' + new_invalid_version
+        present_http_line[-1] = new_http_version
+        new_http_line = b' '.join(present_http_line)
+        present_message[0] = new_http_line
+        packet.lastlayer().load = b'\r\n'.join(present_message)
+        console_log('[HTTP] Invalid Version Modified to - {} '.format(new_http_version.decode()))
+        return packet
+    except:
+        return packet
 
 
 def modify_http_payload_random_append(packet):
@@ -169,8 +180,14 @@ def modify_url_to_self_reference(packet):
     # if there are / in the URL then self reference them.
     pass
 
+def get_md5_hash(file):
+    with open(file, 'rb') as file_fp:
+        data_ = file_fp.read()
+        md5_return = hashlib.md5(data_).hexdigest()
+    return md5_return
 
-def parse_pcap_for_http(input_pcap, output_pcap, evasion):
+
+def parse_pcap_modify_http(input_pcap, output_pcap, evasion):
     """
         HTTP layers were not getting detected and packet.haslayer(HTTPRequest)
         was not working
@@ -210,6 +227,19 @@ def parse_pcap_for_http(input_pcap, output_pcap, evasion):
         packets.append(packet)
     # dump the packets to a PCAP file.
     wrpcap(output_pcap, packets)
+    # Check if input pcap and the output pcap is the same
+    # if same remove the file and return False
+    # else return True
+    old_hash = get_md5_hash(input_pcap)
+    new_hash = get_md5_hash(output_pcap)
+    if new_hash == old_hash:
+        print("Modification Unsucessful. Removing PCAP")
+        os.remove(output_pcap)
+        return False
+    return True
+
+
+
 
 
 def main(arguments):
@@ -228,7 +258,7 @@ def main(arguments):
         print("Invalid Evasion specified valid evasions are {}".format(valid_evasions))
         exit(1)
 
-    parse_pcap_for_http(input_pcap, output_pcap, evasion)
+    parse_pcap_modify_http(input_pcap, output_pcap, evasion)
 
 
 if __name__ == "__main__":
