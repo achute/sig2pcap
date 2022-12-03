@@ -1,3 +1,4 @@
 *.pcap
 *.pyc
 outputs/
+src/valid_rules_default.json

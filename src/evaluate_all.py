@@ -265,7 +265,6 @@ def process_all_valid_rule():
     # Process each SID in their own threads
     # and return the results
     final_result_each = pool.map(process_single_valid_rule, valid_json)
-    print(final_result_each)
     # Close the pool and wait for the work to finish
     pool.close()
     pool.join()
