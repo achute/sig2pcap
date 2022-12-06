@@ -35,7 +35,7 @@ DUT_EngineConfigs = {
 }
 
 DUT_EngineProdRules = {
-    "snort/2.9.15.1": "/opt/dalton/rulesets/snort/emerging-web_server.rules",
+    "snort/2.9.15.1": "/opt/dalton/rulesets/snort/emerging-web_client.rules",
     "snort3": "",
     "suricata": "",
     "zeek": ""

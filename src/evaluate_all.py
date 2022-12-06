@@ -196,8 +196,10 @@ def print_results(result):
                 parent_error += 1
             elif parent_result == 1:
                 parent_tp += 1
+                print("SID TP : ",sid)
             elif parent_result == 2:
                 parent_fp += 1
+                print("SID FP : ",sid)
             elif parent_result == 3:
                 parent_fn += 1
             else:
@@ -208,8 +210,10 @@ def print_results(result):
                     child_error += 1
                 elif each_child_res == 1:
                     child_tp += 1
+                    print("CHILD TP : ",sid)
                 elif each_child_res == 2:
                     child_fp += 1
+                    print("CHILD FP : ",sid)
                 elif each_child_res == 3:
                     child_fn += 1
                 else:
